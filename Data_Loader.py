@@ -4,10 +4,16 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import random
+import json
+import os
+import numpy as np
+import pandas as pd
 
+mean = [0.22116, 0.2263, 0.23685]
+std = [0.25391, 0.27520, 0.30595]
 normalize = transforms.Normalize(
-    mean=[0.485, 0.456, 0.406],
-    std=[0.229, 0.224, 0.225]
+    mean= mean,
+    std= std
 )
 preprocess = transforms.Compose([
     transforms.ToTensor(),
@@ -16,10 +22,13 @@ preprocess = transforms.Compose([
 
 def default_loader(path):
     img_pil =  Image.open(path)
-    img_pil = img_pil.resize((224,224))##VOC dataset 224*224
+    img_pil = img_pil.resize((64,64)) #change to 64
     img_tensor = preprocess(img_pil)
     return img_tensor
 
+
+
+    
 def get_img(path):
     labels_dirs = os.listdir(path)
     imgs_name =[]
@@ -38,20 +47,53 @@ def get_img(path):
 
     return imgs_name,labels
 
+def load_json(self,path):
+    with open(os.path.join(path, 'roi.json'), 'r')as f:
+        rois = json.load(f)
+    f.close()
+    return rois
+
 class dataset(Dataset):
-    def __init__(self, path = 'SE_train' ,loader=default_loader):
+    def __init__(self,csv_path,test_dir):
         #定义好 image 的路径
-        self.images,self.labels = get_img(path)
-        self.loader = loader
+        self.annos = self.load_csv(csv_path)
+        self.imgs = os.listdir(test_dir)
+
+    def load_csv(self,path):
+        annos = pd.read_csv(path)
+        return annos
+
+    def train_loader(self,fn):
+        anno = self.annos[self.annos['filename'] == fn]
+        x1,y1,x2,y2 = anno['X1'],anno['Y1'],anno['X2'],anno['X2']
+        img_pil = Image.open(fn)
+        img_croped = img_pil.crop((x1,y1,x2,y2))
+        img_tensor = preprocess(img_croped)
+        return img_tensor,int(anno['type'])
 
     def __getitem__(self, index):
-        fp = self.images[index]
-        img = self.loader(fp)
-        label = self.labels[index]
+        fn = self.imgs[index]
+        img,label = self.train_loader(fn)
         return img,label
 
     def __len__(self):
-        return len(self.images)
+        return len(self.imgs)
+
+# class dataset(Dataset):
+#     def __init__(self, path = 'SE_train' ,loader=default_loader):
+#         #定义好 image 的路径
+#         self.images,self.labels = get_img(path)
+#         self.loader = loader
+#
+#     def __getitem__(self, index):
+#         fp = self.images[index]
+#         img = self.loader(fp)
+#         label = self.labels[index]
+#         return img,label
+#
+#     def __len__(self):
+#         return len(self.images)
+
 
 train_data = dataset('SE_train')
 trainloader = DataLoader(train_data, batch_size=4, shuffle=True)
