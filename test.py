@@ -3,13 +3,14 @@
 import json
 import os
 from PIL import Image
-from Data_Loader import preprocess
+#from Data_Loader import preprocess
 import torch
 import torch.nn.functional as F
 import pandas as pd
 from progressbar import *
 from torchsummary import summary
-
+from se_resnext import se_resnext_50
+from se_resnet import se_resnet_50
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
@@ -20,8 +21,12 @@ def load_json(path):
     return rois
 
 if __name__ == '__main__':
-    rois = load_json('.')
+ #   rois = load_json('.')
+    model = se_resnext_50()
+    #torch.save(model,'test.pkl')
     model = torch.load('epoch_99.pth')
+    # print(model)
+    # summary(model,(3,128,128))
     model.eval()
     model.cuda()
 #    summary(model,(3,224,224))
