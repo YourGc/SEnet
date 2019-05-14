@@ -58,3 +58,8 @@ trainloader = DataLoader(train_data, batch_size=4, shuffle=True)
 
 valdata = dataset('SE_val')
 valloader = DataLoader(valdata, batch_size=4, shuffle=True)
+
+dataloader = {
+    "train":trainloader,
+    "val":valloader
+}
