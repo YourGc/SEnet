@@ -54,10 +54,10 @@ def load_json(self,path):
     return rois
 
 class dataset(Dataset):
-    def __init__(self,csv_path,test_dir):
+    def __init__(self,csv_path,dir):
         #定义好 image 的路径
         self.annos = self.load_csv(csv_path)
-        self.imgs = os.listdir(test_dir)
+        self.imgs = os.listdir(dir)
 
     def load_csv(self,path):
         annos = pd.read_csv(path)
@@ -94,12 +94,12 @@ class dataset(Dataset):
 #     def __len__(self):
 #         return len(self.images)
 
+Batch_size = 4
+train_data = dataset(csv_path='train_label_fix.csv',dir = 'Train_fix')
+trainloader = DataLoader(train_data, batch_size=Batch_size, shuffle=True)
 
-train_data = dataset('SE_train')
-trainloader = DataLoader(train_data, batch_size=4, shuffle=True)
-
-valdata = dataset('SE_val')
-valloader = DataLoader(valdata, batch_size=4, shuffle=True)
+valdata = dataset(csv_path='val_label_fix.csv',dir = 'Val_fix')
+valloader = DataLoader(valdata, batch_size=Batch_size, shuffle=True)
 
 dataloader = {
     "train":trainloader,
