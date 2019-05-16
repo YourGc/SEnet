@@ -26,8 +26,6 @@ def default_loader(path):
     img_tensor = preprocess(img_pil)
     return img_tensor
 
-
-
     
 def get_img(path):
     labels_dirs = os.listdir(path)
@@ -94,14 +92,15 @@ class dataset(Dataset):
 #     def __len__(self):
 #         return len(self.images)
 
-Batch_size = 4
-train_data = dataset(csv_path='train_label_fix.csv',dir = 'Train_fix')
-trainloader = DataLoader(train_data, batch_size=Batch_size, shuffle=True)
-
-valdata = dataset(csv_path='val_label_fix.csv',dir = 'Val_fix')
-valloader = DataLoader(valdata, batch_size=Batch_size, shuffle=True)
-
-dataloader = {
-    "train":trainloader,
-    "val":valloader
-}
+# Batch_size = 4
+# train_data = dataset(csv_path='train_label_fix.csv',dir = 'Train_fix')
+# trainloader = DataLoader(train_data, batch_size=Batch_size, shuffle=True)
+#
+# valdata = dataset(csv_path='val_label_fix.csv',dir = 'Val_fix')
+# valloader = DataLoader(valdata, batch_size=Batch_size, shuffle=True)
+#
+#
+# dataloader = {
+#     "train":trainloader,
+#     "val":valloader
+# }

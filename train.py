@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 
 import torch
+from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
@@ -10,15 +11,17 @@ import os
 import argparse
 import se_resnet
 import se_resnext
-from Data_Loader import dataloader
+from Data_Loader import dataset
+
 from torchsummary import summary
+
 
 def train_model(args, model, criterion, optimizer, scheduler, num_epochs, dataset_sizes):
     since = time.time()
     resumed = False
 
     best_model_wts = model.state_dict()
-    summary(model,(3,64,64))
+    # summary(model,(3,64,64))
 
     for epoch in range(args.start_epoch+1,num_epochs):
 
@@ -39,7 +42,7 @@ def train_model(args, model, criterion, optimizer, scheduler, num_epochs, datase
 
             tic_batch = time.time()
             # Iterate over data.
-            for i, (inputs, labels) in enumerate(dataloders[phase]):
+            for i, (inputs, labels) in enumerate(dataloaders[phase]):
                 # wrap them in Variable
                 if use_gpu:
                     inputs = Variable(inputs.cuda())
@@ -60,12 +63,18 @@ def train_model(args, model, criterion, optimizer, scheduler, num_epochs, datase
                     loss.backward()
                     optimizer.step()
 
+                cur_loss = loss.item()
+                cur_correctrs = torch.sum(preds == labels.data)
                 # statistics
-                running_loss += loss.item()
+                running_loss += loss.item() #pytorch 0.4之后改版支持0维张量，之前是loss.data[0]
                 running_corrects += torch.sum(preds == labels.data)
 
-                batch_loss = running_loss / ((i+1)*args.batch_size)
-                batch_acc = running_corrects / ((i+1)*args.batch_size)
+                batch_loss = cur_loss / (args.batch_size)
+                batch_acc = cur_correctrs / (args.batch_size)
+                # batch_loss = running_loss / ((i+1)*args.batch_size)
+                # batch_acc = running_corrects / ((i+1)*args.batch_size)
+
+
 
                 if phase == 'train' and i%args.print_freq == 0:
                     print('[Epoch {}/{}]-[batch:{}/{}] lr:{:.4f} {} Loss: {:.6f}  Acc: {:.4f}  Time: {:.4f}batch/sec'.format(
@@ -111,7 +120,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # read data
-    dataloaders= dataloader
+    train_data = dataset(csv_path='train_label_fix.csv', dir='Train_fix')
+    trainloader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
+
+    valdata = dataset(csv_path='val_label_fix.csv', dir='Val_fix')
+    valloader = DataLoader(valdata, batch_size=args.batch_size, shuffle=True)
+
+    dataloaders = {
+        "train": trainloader,
+        "val": valloader
+    }
     dataset_sizes = {
         "train":len(dataloaders['train']),
         "val":len(dataloaders['val'])
@@ -119,7 +137,7 @@ if __name__ == '__main__':
 
     # use gpu or not
     use_gpu = torch.cuda.is_available()
-    use_gpu = False
+    # use_gpu = False
     print("use_gpu:{}".format(use_gpu))
 
     # get model
@@ -145,6 +163,7 @@ if __name__ == '__main__':
         model = model.cuda()
         model = torch.nn.DataParallel(model, device_ids=[int(i) for i in args.gpus.strip().split(',')])
 
+
     # define loss function
     criterion = nn.CrossEntropyLoss()
 
@@ -160,4 +179,4 @@ if __name__ == '__main__':
                            optimizer=optimizer_ft,
                            scheduler=exp_lr_scheduler,
                            num_epochs=args.num_epochs,
-                           dataset_sizes=datasizes)
+                           dataset_sizes=dataset_sizes)
